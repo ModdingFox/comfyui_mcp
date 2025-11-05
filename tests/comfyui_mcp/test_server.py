@@ -7,7 +7,7 @@ from comfyui_utils.comfy import Callbacks  # type: ignore[import-untyped]
 
 from comfyui_mcp.argument_parser import ArgsComfyUI, ArgsGenerate
 from comfyui_mcp.base_types import WorkflowType
-from comfyui_mcp.server import generate_image
+from comfyui_mcp.server import generate
 from tests.comfyui_mcp.payloads import (
     valid_workflow_payload_base,
     valid_workflow_payload_modified_base,
@@ -16,6 +16,7 @@ from tests.comfyui_mcp.payloads import (
 
 
 class TestServer:
+    # Ignore mock_randint unuesd as it is used to patch the retrun value
     @pytest.mark.parametrize(
         (
             "generated_images",
@@ -27,25 +28,49 @@ class TestServer:
         [
             ([], 1, workflow_params_modified_base, valid_workflow_payload_base, valid_workflow_payload_modified_base),
             ([], 2, workflow_params_modified_base, valid_workflow_payload_base, valid_workflow_payload_modified_base),
-            ([{"filename": "image_0.png"}], 1, workflow_params_modified_base, valid_workflow_payload_base, valid_workflow_payload_modified_base),
-            ([{"filename": "image_0.png"}], 2, workflow_params_modified_base, valid_workflow_payload_base, valid_workflow_payload_modified_base),
-            ([{"filename": "image_0.png"}, {"filename": "image_1.png"}], 1, workflow_params_modified_base, valid_workflow_payload_base, valid_workflow_payload_modified_base),
-            ([{"filename": "image_0.png"}, {"filename": "image_1.png"}], 2, workflow_params_modified_base, valid_workflow_payload_base, valid_workflow_payload_modified_base),
+            (
+                [{"filename": "image_0.png"}],
+                1,
+                workflow_params_modified_base,
+                valid_workflow_payload_base,
+                valid_workflow_payload_modified_base,
+            ),
+            (
+                [{"filename": "image_0.png"}],
+                2,
+                workflow_params_modified_base,
+                valid_workflow_payload_base,
+                valid_workflow_payload_modified_base,
+            ),
+            (
+                [{"filename": "image_0.png"}, {"filename": "image_1.png"}],
+                1,
+                workflow_params_modified_base,
+                valid_workflow_payload_base,
+                valid_workflow_payload_modified_base,
+            ),
+            (
+                [{"filename": "image_0.png"}, {"filename": "image_1.png"}],
+                2,
+                workflow_params_modified_base,
+                valid_workflow_payload_base,
+                valid_workflow_payload_modified_base,
+            ),
         ],
     )
     @patch("comfyui_mcp.server.SystemRandom.randint", return_value=0)
     @patch("comfyui_mcp.workflow_utils.ComfyAPI")
-    def test_generate_image(
+    def test_generate(
         self,
         mock_comfy_api,
-        mock_randint,
+        mock_randint,  # noqa: ARG002
         generated_images,
         submit_batch,
         workflow_params_modified,
         workflow_payload,
         workflow_payload_expected,
     ):
-        """Ensure generate_image behaves deterministically and matches expected markdown output."""
+        """Ensure generate behaves deterministically and matches expected markdown output."""
 
         async def submit_side_effect(workflow: WorkflowType, callbacks: Callbacks) -> None:
             assert workflow == workflow_payload_expected
@@ -60,7 +85,6 @@ class TestServer:
         argscomfyui = ArgsComfyUI()
         argsgenerate = ArgsGenerate()
 
-        # build params
         generation_params = {
             **workflow_params_modified,
             "seed": 1,
@@ -68,9 +92,8 @@ class TestServer:
             "batch_by_time": False,
         }
 
-        result = asyncio.run(generate_image(argscomfyui, argsgenerate, workflow_payload, dict(generation_params)))
+        result = asyncio.run(generate(argscomfyui, argsgenerate, workflow_payload, dict(generation_params)))
 
-        # ---- expected output reconstruction ----
         if not generated_images:
             expected = argsgenerate.nothing_generated_message
         else:
@@ -95,9 +118,7 @@ class TestServer:
                 sort_keys=argsgenerate.reply_workflow_format_sort_keys,
             )
 
-            expected = argsgenerate.result_generated_message_template.format(
-                image_list="".join(image_list)
-            )
+            expected = argsgenerate.result_generated_message_template.format(image_list="".join(image_list))
             expected += argsgenerate.reply_workflow_template.format(workflow_params=workflow_json)
 
         assert result == expected

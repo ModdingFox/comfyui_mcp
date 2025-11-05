@@ -15,9 +15,18 @@ class ArgsComfyUI(BaseModel):
 
 
 class ArgsGenerate(BaseModel):
+    # \n before and after audio tags requied to make open-webui render corectly added to others to be consistent
+    audio_url_template: str = Field(
+        default="\nResult {index}\n<details><audio controls>\n{url}\n</audio></details>\n",
+        description="Template to use for generated audio items. Template vars: index and url",
+    )
     image_url_template: str = Field(
-        default="![Image {index}]({url})\n",
-        description="Template to use for generated image list. Template vars: index and url",
+        default="\n![Result {index}]({url})\n",
+        description="Template to use for generated image items. Template vars: index and url",
+    )
+    unknown_url_template: str = Field(
+        default="\n[Result {index}]({url})\n",
+        description="Template to use for unknown generated items. Template vars: index and url",
     )
     nothing_generated_message: str = Field(
         default="Tool call succeded but nothing was generated",
@@ -29,7 +38,7 @@ class ArgsGenerate(BaseModel):
     reply_workflow_format_indent: int = Field(default=2, description="Json indentation level")
     reply_workflow_format_sort_keys: bool = Field(default=True, description="Json sort keys or leave them as they are")
     reply_workflow_template: str = Field(
-        default="<details>\n<summary>payload.json</summary>\n{workflow_params}\n</details>",
+        default="\n<details>\n<summary>payload.json</summary>\n{workflow_params}\n</details>\n",
         description="Template to use for returning the called params in the reply. Template vars: workflow_params",
     )
     result_generated_message_template: str = Field(

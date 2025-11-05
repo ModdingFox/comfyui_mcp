@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from comfyui_mcp.base_types import ComfyResult
 from comfyui_mcp.workflow_utils import call_workflow, get_params_from_workflow, prepare_workflow
 
 
@@ -10,7 +11,8 @@ def test_call_workflow(monkeypatch):
 
     called = {}
 
-    async def fake_submit(self, workflow, callbacks):
+    # Ignore unused first arg as its required for mocking submit
+    async def fake_submit(self, workflow, callbacks):  # noqa: ARG001
         called["workflow"] = workflow
         # Simulate callback completing successfully
         await callbacks.completed({"images": [{"filename": "test.png"}]}, cached=False)
@@ -26,12 +28,10 @@ def test_call_workflow(monkeypatch):
     args = MagicMock()
     args.host = "localhost"
 
-    result = asyncio.run(
-        call_workflow(args, {"nodes": {"0": {"class_type": "ImageSaver"}}})
-    )
+    result = asyncio.run(call_workflow(args, {"nodes": {"0": {"class_type": "ImageSaver"}}}))
 
     assert isinstance(result, list)
-    assert result == ["http://localhost/api/view?filename=test.png"]
+    assert result == [ComfyResult(media_type="images", filename="http://localhost/api/view?filename=test.png")]
     assert "workflow" in called
 
 

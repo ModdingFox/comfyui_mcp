@@ -32,15 +32,17 @@ class TestFunctionUtils:
         ArgsComfyUI, ArgsGenerate, workflow, and params to the wrapped coroutine.
         Run the wrapper via asyncio.run() so async defs are properly executed.
         """
-        argscomfyui = ArgsComfyUI()
-        argsgenerate = ArgsGenerate()
+        test_argscomfyui = ArgsComfyUI()
+        test_argsgenerate = ArgsGenerate()
 
         async def test_funct(
-            _argscomfyui: ArgsComfyUI,
-            _argsgenerate: ArgsGenerate,
+            argscomfyui: ArgsComfyUI,
+            argsgenerate: ArgsGenerate,
             workflow: WorkflowType,
             workflow_params: WorkflowParamType,
         ) -> str:
+            assert test_argscomfyui == argscomfyui
+            assert test_argsgenerate == argsgenerate
             assert workflow == workflow_payload
             # ensure all expected params were forwarded
             for k, v in expected_workflow_params.items():
@@ -50,8 +52,8 @@ class TestFunctionUtils:
             return dumps(workflow, indent=4, sort_keys=True)
 
         wrapped_fn: WrappedFunctionType = wrap_fn(
-            argscomfyui=argscomfyui,
-            argsgenerate=argsgenerate,
+            argscomfyui=test_argscomfyui,
+            argsgenerate=test_argsgenerate,
             name="test_funct",
             workflow=workflow_payload,
             wrapped_fn=test_funct,

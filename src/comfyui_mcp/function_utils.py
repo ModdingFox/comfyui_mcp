@@ -53,7 +53,7 @@ def wrap_fn(
     )
 
     signature: Signature = Signature(parameters)
-    logger.info(f"{name}: {signature}")
+    logger.info("%s: %s", name, signature)
 
     @wraps(wrapped_fn)
     def wrapper(**kwargs):

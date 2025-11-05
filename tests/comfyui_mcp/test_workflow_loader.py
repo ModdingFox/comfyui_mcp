@@ -48,14 +48,13 @@ class TestWorkflowLoader:
     @patch("comfyui_mcp.workflow_loader.post")
     @patch("comfyui_mcp.workflow_loader.get")
     def test_load_workflows_from_comfyui(self, mock_get, mock_post, count: int):
-        """Match loader’s real URL patterns (http:// + host + v2/userdata for first, /userdata for others)."""
+        """Match loader's real URL patterns (http:// + host + v2/userdata for first, /userdata for others)."""
         base_url = "http://comfy:8188"
         workflows = [make_dummy_workflow(i) for i in range(count)]
 
         list_response = MagicMock()
         list_response.json.return_value = [
-            {"name": f"workflow_{i}.json", "type": "file", "path": f"workflows/workflow_{i}.json"}
-            for i in range(count)
+            {"name": f"workflow_{i}.json", "type": "file", "path": f"workflows/workflow_{i}.json"} for i in range(count)
         ]
 
         workflow_responses = []
@@ -64,7 +63,7 @@ class TestWorkflowLoader:
             r.json.return_value = wf
             workflow_responses.append(r)
 
-        mock_get.side_effect = [list_response] + workflow_responses
+        mock_get.side_effect = [list_response, *workflow_responses]
 
         post_responses = []
         for wf in workflows:
@@ -90,9 +89,7 @@ class TestWorkflowLoader:
         assert mock_fast_mcp.add_tool.call_count == count
 
         # Adjusted expected URLs to match observed real behavior
-        expected_urls = [
-            f"http://{base_url}/api/v2/userdata?path={quote('workflows', safe='')}"
-        ] + [
+        expected_urls = [f"http://{base_url}/api/v2/userdata?path={quote('workflows', safe='')}"] + [
             f"http://{base_url}/api/userdata/{quote('workflows/workflow_' + str(i) + '.json', safe='')}"
             for i in range(count)
         ]

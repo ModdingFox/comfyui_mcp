@@ -9,6 +9,8 @@ from fastmcp import FastMCP
 
 from comfyui_mcp.argument_parser import ArgsComfyUI, ArgsGenerate, get_application_args
 from comfyui_mcp.base_types import (
+    ComfyResult,
+    MediaType,
     WorkflowParamType,
     WorkflowType,
 )
@@ -21,10 +23,19 @@ basicConfig(level=INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 system_random = SystemRandom()
 
 
-async def generate_image(
+def format_comfy_result(argsgenerate: ArgsGenerate, comfy_result: ComfyResult, index: int) -> str:
+    templates: dict[MediaType, str] = {
+        MediaType.AUDIO: argsgenerate.audio_url_template,
+        MediaType.IMAGES: argsgenerate.image_url_template,
+        MediaType.UNKNOWN: argsgenerate.unknown_url_template,
+    }
+    return templates[comfy_result.media_type].format(index=index, url=str(comfy_result.filename))
+
+
+async def generate(
     argscomfyui: ArgsComfyUI, argsgenerate: ArgsGenerate, workflow: WorkflowType, workflow_params: WorkflowParamType
 ) -> str:
-    workflow_results: list[str] = []
+    workflow_results: list[ComfyResult] = []
     seeds: list[int] = []
 
     batch_by_time = workflow_params["batch_by_time"]
@@ -53,7 +64,8 @@ async def generate_image(
     if len(workflow_results) > 0:
         image_results: list[str] = []
         for index, workflow_result in enumerate(workflow_results):
-            image_results.append(argsgenerate.image_url_template.format(index=index, url=workflow_result))
+            formatted_result = format_comfy_result(argsgenerate=argsgenerate, comfy_result=workflow_result, index=index)
+            image_results.append(formatted_result)
         result = argsgenerate.result_generated_message_template.format(image_list="".join(image_results))
         if argsgenerate.reply_include_workflow:
             if len(seeds) > 1:
@@ -73,8 +85,8 @@ if __name__ == "__main__":
     fast_mcp: FastMCP = FastMCP(name="ComfyUI MCP Server", version=str(version))
 
     if _args.comfyui.use_remote_workflow:
-        load_workflows_from_comfyui(_args.comfyui, _args.generate, generate_image, fast_mcp)
+        load_workflows_from_comfyui(_args.comfyui, _args.generate, generate, fast_mcp)
     else:
-        load_workflows_from_path(_args.comfyui, _args.generate, generate_image, fast_mcp)
+        load_workflows_from_path(_args.comfyui, _args.generate, generate, fast_mcp)
 
     fast_mcp.run()
