@@ -23,9 +23,11 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "comfyui-utils>=0.0.1",
+  "backoff",
   "fastmcp>=2.13.0.2",
-  "jsonargparse"
+  "jsonargparse",
+  "mcpo",
+  "requests",
 ]
 
 [project.urls]
@@ -56,6 +58,8 @@ tests = ["tests", "*/comfyui-mcp/tests"]
 [tool.hatch.envs.default.scripts]
 release = "hatch fmt && hatch run types:check && hatch test --cover && hatch build"
 dry_release = "hatch fmt; hatch run types:check; hatch test --cover; hatch build"
+start_mcpo = "mcpo --port 8000 --api-key \"{env:MCPO_API_KEY:AwesomeKey}\" -- python3 -m comfyui_mcp.server --comfyui.host {env:COMFYUI_HOST:127.0.0.1:8188}"
+
 
 [tool.hatch.envs.hatch-test]
 dependencies = [
@@ -82,4 +86,3 @@ check = "mypy --install-types --non-interactive {args:src/comfyui_mcp tests}"
 
 [tool.hatch.version]
 path = "src/comfyui_mcp/__about__.py"
-

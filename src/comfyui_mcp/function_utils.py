@@ -23,7 +23,6 @@ def wrap_fn(
 ) -> WrappedFunctionType:
     annotations: dict[str, type] = {}
     parameters: list[Parameter] = []
-
     found_parameters: WorkflowParamType = get_params_from_workflow(workflow)
 
     for key, value in found_parameters.items():
@@ -66,6 +65,7 @@ def wrap_fn(
         f"Dynamically generated wrapper for {wrapped_fn.__name__} with parameters: {list(found_parameters)}"
     )
     wrapper.__name__ = name
-    # Required voodoo to set the funct function signature. My pygets quite angry about this
+    # Required voodoo to set the function signature. Mypy gets quite angry about this
     wrapper.__signature__ = signature  # type: ignore[attr-defined]
+
     return wrapper

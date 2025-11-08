@@ -3,18 +3,14 @@ from logging import getLogger
 from os import listdir
 from os.path import join
 from typing import TYPE_CHECKING, Any
-from urllib.parse import quote
 
 from fastmcp import FastMCP
 from fastmcp.tools.tool import FunctionTool, Tool
-from requests import get, post
 
 from comfyui_mcp.argument_parser import ArgsComfyUI, ArgsGenerate
-from comfyui_mcp.base_types import (
-    GenerateFunctionType,
-    WorkflowType,
-)
+from comfyui_mcp.base_types import GenerateFunctionType, WorkflowType
 from comfyui_mcp.function_utils import wrap_fn
+from comfyui_mcp.workflow_utils import ComfyUIClient
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -42,33 +38,23 @@ def load_workflows_from_path(
 def load_workflows_from_comfyui(
     argscomfyui: ArgsComfyUI, argsgenerate: ArgsGenerate, generation_function: GenerateFunctionType, fast_mcp: FastMCP
 ) -> None:
-    workflow_directory_urlencoded: str = quote(argscomfyui.workflow_directory, safe="")
-    workflow_list_response = get(
-        f"http://{argscomfyui.host}/api/v2/userdata?path={workflow_directory_urlencoded}",
-        timeout=argscomfyui.request_timeout,
-    )
-    workflow_list_response.raise_for_status()
-    workflow_list = workflow_list_response.json()
+    client = ComfyUIClient(argscomfyui)
+
+    workflow_list = client.list_workflows(argscomfyui.workflow_directory)
+
     for workflow in workflow_list:
         workflow_name = workflow["name"]
         logger.info(
             "Loading workflow %s from %s on %s", workflow_name, argscomfyui.workflow_directory, argscomfyui.host
         )
         function_name: str = workflow_name.replace(".", "_")
+
         if workflow["type"] == "file":
-            workflow_path = quote(workflow["path"], safe="")
-            workflow_data_response = get(
-                f"http://{argscomfyui.host}/api/userdata/{workflow_path}", timeout=argscomfyui.request_timeout
-            )
-            workflow_data_response.raise_for_status()
-            workflow_data = workflow_data_response.json()
-            workflow_convert_response = post(
-                f"http://{argscomfyui.host}/workflow/convert",
-                json=workflow_data,
-                timeout=argscomfyui.request_timeout,
-            )
-            workflow_convert_response.raise_for_status()
-            workflow_api: WorkflowType = workflow_convert_response.json()
+            workflow_path = workflow["path"]
+
+            workflow_data = client.get_workflow(workflow_path)
+            workflow_api: WorkflowType = client.convert_workflow(workflow_data)
+
             call: Callable[..., Any] = wrap_fn(
                 argscomfyui, argsgenerate, function_name, workflow_api, generation_function
             )

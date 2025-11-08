@@ -6,16 +6,22 @@ from pydantic import BaseModel, Field
 
 class ArgsComfyUI(BaseModel):
     host: str = Field(default="127.0.0.1:8188", description="ComfyUI host:port")
-    request_timeout: int = Field(default=5, description="Timeout for requests to ComfyUI")
+    request_timeout: int = Field(default=30, description="Timeout for requests to ComfyUI")
+    max_retries: int = Field(default=5, ge=1, description="Maximum number of retries")
+    queue_check_interval: float = Field(default=2.0, ge=0.1, description="Queue polling interval in seconds")
+    lost_job_check_limit: int = Field(default=10, ge=1, description="Max checks before considering job lost")
+    max_wait_time: float | None = Field(
+        default=None, ge=1.0, description="Maximum time to wait for job completion (None = infinite)"
+    )
     use_remote_workflow: bool = Field(
         default=True,
-        description="True pulls workflow form comfyui directly. False uses a local directory path containing the json files",
+        description="True pulls workflow from comfyui directly. False uses a local directory path containing the json files",
     )
     workflow_directory: str = Field(default="workflows", description="Path to load workflows from")
 
 
 class ArgsGenerate(BaseModel):
-    # \n before and after audio tags requied to make open-webui render corectly added to others to be consistent
+    # \n before and after audio tags required to make open-webui render correctly added to others to be consistent
     audio_url_template: str = Field(
         default="\nResult {index}\n<details><audio controls>\n{url}\n</audio></details>\n",
         description="Template to use for generated audio items. Template vars: index and url",
@@ -29,7 +35,7 @@ class ArgsGenerate(BaseModel):
         description="Template to use for unknown generated items. Template vars: index and url",
     )
     nothing_generated_message: str = Field(
-        default="Tool call succeded but nothing was generated",
+        default="Tool call succeeded but nothing was generated",
         description="Message to return when called and nothing generated",
     )
     reply_include_workflow: bool = Field(
@@ -42,7 +48,7 @@ class ArgsGenerate(BaseModel):
         description="Template to use for returning the called params in the reply. Template vars: workflow_params",
     )
     result_generated_message_template: str = Field(
-        default="Return the following to the user exactly as is in markdown format Do not provide any imformation before or after this in the output:\n{image_list}",
+        default="Return the following to the user exactly as is in markdown format Do not provide any information before or after this in the output:\n{image_list}",
         description="Message to return when something was generated. Template vars: image_list",
     )
 

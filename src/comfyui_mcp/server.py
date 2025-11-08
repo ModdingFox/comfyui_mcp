@@ -19,7 +19,6 @@ from comfyui_mcp.workflow_utils import call_workflow, prepare_workflow
 
 basicConfig(level=INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-
 system_random = SystemRandom()
 
 
@@ -37,9 +36,9 @@ async def generate(
 ) -> str:
     workflow_results: list[ComfyResult] = []
     seeds: list[int] = []
-
     batch_by_time = workflow_params["batch_by_time"]
     submit_batch = workflow_params["submit_batch"]
+
     if batch_by_time:
         end_time = time() + (submit_batch * 60)
         i = 0
@@ -66,7 +65,9 @@ async def generate(
         for index, workflow_result in enumerate(workflow_results):
             formatted_result = format_comfy_result(argsgenerate=argsgenerate, comfy_result=workflow_result, index=index)
             image_results.append(formatted_result)
+
         result = argsgenerate.result_generated_message_template.format(image_list="".join(image_results))
+
         if argsgenerate.reply_include_workflow:
             if len(seeds) > 1:
                 del workflow_params["seed"]
@@ -77,6 +78,7 @@ async def generate(
                 sort_keys=argsgenerate.reply_workflow_format_sort_keys,
             )
             result += argsgenerate.reply_workflow_template.format(workflow_params=workflow_params_string)
+
     return result
 
 
